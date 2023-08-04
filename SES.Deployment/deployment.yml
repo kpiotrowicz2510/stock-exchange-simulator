@@ -1,0 +1,303 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ses-rabbitmq
+  labels:
+    app: ses-rabbitmq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ses-rabbitmq
+  template:
+    metadata:
+      labels:
+        app: ses-rabbitmq
+    spec:
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:3-management
+          ports:
+            - containerPort: 5672
+            - containerPort: 15672
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/rabbitmq/definitions.json
+              subPath: definitions.json
+            - name: rabbitmq-conf-volume
+              mountPath: /etc/rabbitmq/rabbitmq.conf
+              subPath: rabbitmq.conf
+            - name: data-volume
+              mountPath: /var/lib/rabbitmq/mnesia/rabbit@my-rabbit
+            - name: logs-volume
+              mountPath: /var/log/rabbitmq/log
+      volumes:
+        - name: config-volume
+          configMap:
+            name: config-map
+        - name: rabbitmq-conf-volume
+          configMap:
+            name: rabbitmq-conf-map
+        - name: data-volume
+          emptyDir: { }
+        - name: logs-volume
+          emptyDir: { }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ses-rabbitmq
+  labels:
+    app: ses-rabbitmq
+    tier: service
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 5672
+      targetPort: 5672
+      name: rabbitmq-srv
+      protocol: TCP
+  selector:
+    app: ses-rabbitmq
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmqmanagement-loadbalancer
+spec:
+  type: LoadBalancer
+  selector:
+    app: ses-rabbitmq
+  ports:
+    - port: 15672
+      targetPort: 15672
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ses-apiservice
+  labels:
+    app: ses-apiservice
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ses-apiservice
+  template:
+    metadata:
+      labels:
+        app: ses-apiservice
+    spec:
+      containers:
+        - name: ses-apiservice
+          imagePullPolicy: Never
+          image: ses-apiservice:1.0.0
+          ports:
+            - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: apiservice-loadbalancer
+spec:
+  type: LoadBalancer
+  selector:
+    app: ses-apiservice
+  ports:
+    - port: 80
+      targetPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ses-paymentsystemservice
+  labels:
+    app: ses-paymentsystemservice
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: ses-paymentsystemservice
+  template:
+    metadata:
+      labels:
+        app: ses-paymentsystemservice
+    spec:
+      containers:
+        - name: ses-paymentsystemservice
+          imagePullPolicy: Never
+          image: ses-paymentsystemservice:1.0.0
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ses-mockpaymentproviderservice
+  labels:
+    app: ses-mockpaymentproviderservice
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ses-mockpaymentproviderservice
+  template:
+    metadata:
+      labels:
+        app: ses-mockpaymentproviderservice
+    spec:
+      containers:
+        - name: ses-mockpaymentproviderservice
+          imagePullPolicy: Never
+          image: ses-mockpaymentproviderservice:1.0.0
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ses-stockexchangeservice
+  labels:
+    app: ses-stockexchangeservice
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: ses-stockexchangeservice
+  template:
+    metadata:
+      labels:
+        app: ses-stockexchangeservice
+    spec:
+      containers:
+        - name: ses-stockexchangeservice
+          imagePullPolicy: Never
+          image: ses-stockexchangeservice:1.0.0
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ses-stockinformationservice
+  labels:
+    app: ses-stockinformationservice
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ses-stockinformationservice
+  template:
+    metadata:
+      labels:
+        app: ses-stockinformationservice
+    spec:
+      containers:
+        - name: ses-stockinformationservice
+          imagePullPolicy: Never
+          image: ses-stockinformationservice:1.0.0
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ses-stockownershipservice
+  labels:
+    app: ses-stockownershipservice
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ses-stockownershipservice
+  template:
+    metadata:
+      labels:
+        app: ses-stockownershipservice
+    spec:
+      containers:
+        - name: ses-stockownershipservice
+          imagePullPolicy: Never
+          image: ses-stockownershipservice:1.0.0
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ses-stocktransactionservice
+  labels:
+    app: ses-stocktransactionservice
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ses-stocktransactionservice
+  template:
+    metadata:
+      labels:
+        app: ses-stocktransactionservice
+    spec:
+      containers:
+        - name: ses-stocktransactionservice
+          imagePullPolicy: Never
+          image: ses-stocktransactionservice:1.0.0
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ses-usermanagementservice
+  labels:
+    app: ses-usermanagementservice
+spec:
+  replicas: 10
+  selector:
+    matchLabels:
+      app: ses-usermanagementservice
+  template:
+    metadata:
+      labels:
+        app: ses-usermanagementservice
+    spec:
+      containers:
+        - name: ses-usermanagementservice
+          imagePullPolicy: Never
+          image: ses-usermanagementservice:1.0.0
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: ses-paymentsystemservice-scaledobject
+  namespace: default
+  labels:
+    app: ses-paymentsystemservice
+spec:
+  maxReplicaCount: 10
+  minReplicaCount: 1
+  pollingInterval: 1
+  idleReplicaCount: 0
+  cooldownPeriod: 5
+  scaleTargetRef:
+    name: ses-paymentsystemservice
+  triggers:
+    - type: rabbitmq
+      metadata:
+        host: amqp://guest:guest@10.109.140.102:5672/
+        protocol: amqp
+        queueName: ses-payment
+        mode: QueueLength
+        value: "20"
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: ses-stockexchangeservice-scaledobject
+  namespace: default
+  labels:
+    app: ses-rabbitmq
+spec:
+  maxReplicaCount: 10
+  minReplicaCount: 1
+  idleReplicaCount: 0
+  pollingInterval: 1
+  cooldownPeriod: 5
+  scaleTargetRef:
+    name: ses-stockexchangeservice
+  triggers:
+    - type: rabbitmq
+      metadata:
+        host: amqp://guest:guest@10.109.140.102:5672/
+        protocol: amqp
+        queueName: ses-exchange
+        mode: QueueLength
+        value: "20"
