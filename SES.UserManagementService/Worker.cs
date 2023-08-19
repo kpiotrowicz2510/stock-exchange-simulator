@@ -71,9 +71,9 @@ public sealed class Worker : BackgroundService
                 Ulid.NewUlid(),
                 10.0,
                 50,
-                DateTime.Now,
+                DateTime.UtcNow,
                 _user.Id,
-                BidType.Buy
+                Random.Shared.Next(1,100) > 50 ? BidType.Buy : BidType.Sell
             );
             
             _client.Publish(

@@ -1,4 +1,5 @@
 using System.Text;
+using MediatR;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 

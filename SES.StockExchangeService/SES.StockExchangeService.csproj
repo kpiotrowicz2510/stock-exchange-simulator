@@ -9,11 +9,23 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="MediatR" Version="12.1.1" />
+      <PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" Version="11.1.0" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.10">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+      <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.4" />
       <PackageReference Include="Ulid" Version="1.2.6" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\SES.Shared\SES.Shared.csproj" />
+    </ItemGroup>
+
+
+    <ItemGroup>
+      <Folder Include="Events\" />
     </ItemGroup>
 
 </Project>

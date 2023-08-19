@@ -1,4 +1,5 @@
 using System.Text;
+using MediatR;
 using RabbitMQ.Client.Events;
 
 namespace SES.Shared.Infrastructure;

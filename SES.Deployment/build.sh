@@ -9,6 +9,7 @@ docker build -t ses-stockownershipservice:1.0.0 -f ./SES.StockOwnershipService.D
 docker build -t ses-stocktransactionservice:1.0.0 -f ./SES.StockTransactionService.Dockerfile . &&
 docker build -t ses-usermanagementservice:1.0.0 -f ./SES.UserManagementService.Dockerfile . &&
 echo "Done building." &&
+#cd SES.Database && kubectl apply -f postgres-config.yaml 
 #cd SES.Queue && kubectl create configmap config-map --from-file=definitions.json=./config/definitions.json
 #&& kubectl create configmap rabbitmq-conf-map --from-file=rabbitmq.conf=./config/rabbitmq.conf
 #&& cd ../

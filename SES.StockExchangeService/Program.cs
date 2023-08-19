@@ -1,54 +1,34 @@
-using System.Text.Json;
-using SES.Shared.Contract;
-using SES.Shared.Extensions;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
 using SES.Shared.Infrastructure;
-
-Ulid SystemUserId = Ulid.NewUlid();
-
-Action<string> loggerCallback = (message) =>
-{
-    var stockBid = JsonSerializer.Deserialize<StockBid>(message);
-
-    Console.WriteLine($" [x] Received {stockBid}");
-};
+using StockExchangeService;
+using StockExchangeService.Persistence;
 
 var mqClient = MqClientFactory
     .CreateMqClient(MqClients.RabbitMQ, "ses-rabbitmq");
 
-Action<string> messageCallback = (message) =>
+var configurationBuilder = new ConfigurationBuilder();
+configurationBuilder.AddJsonFile("appsettings.json");
+var configuration = configurationBuilder.Build();
+
+IHostBuilder builder = Host.CreateDefaultBuilder(args)
+    .ConfigureServices(services =>
+    {
+        services.AddDbContext<CommandDbContext>(options =>
+            options.UseNpgsql(configuration.GetConnectionString("CommandConnection")), ServiceLifetime.Transient);
+        services.AddDbContext<QueryDbContext>(options =>
+            options.UseNpgsql(configuration.GetConnectionString("QueryConnection")), ServiceLifetime.Transient);
+        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
+        services.AddSingleton(mqClient);
+        services.AddHostedService<BackgroundWorker>();
+    });
+
+IHost host = builder.Build();
+
+using (var scope = host.Services.CreateScope())
 {
-    var stockBid = JsonSerializer.Deserialize<StockBid>(message);
+    scope.ServiceProvider.GetRequiredService<CommandDbContext>().Database.Migrate();
+    scope.ServiceProvider.GetRequiredService<QueryDbContext>().Database.Migrate();
+}
 
-    Console.WriteLine($" [x] Received {stockBid.BidType} for {stockBid.CompanyStockId}");
-    Console.WriteLine($" [x] Processing {stockBid.BidType} for {stockBid.CompanyStockId}");
-    Thread.Sleep(500);
-
-    var transaction = new StockTransaction(
-        Ulid.NewUlid(),
-        stockBid.ProcessingId,
-        stockBid.CompanyStockId,
-        stockBid.PricePerShare,
-        stockBid.Amount,
-        DateTime.Now,
-        SystemUserId,
-        stockBid.UserId
-    );
-    
-    mqClient.Publish(
-        "",
-        "ses-transaction",
-        JsonSerializer.Serialize(transaction),
-        null);
-    
-    Console.WriteLine($" [x] Finished {stockBid.BidType} for {stockBid.CompanyStockId}");
-};
-
-mqClient.RegisterCallback("ses-exchange", messageCallback);
-
-var builder = WebApplication.CreateBuilder(args);
-
-builder.Services.AddSingleton(mqClient);
-
-var app = builder.Build();
-
-app.Run();
+host.Run();
